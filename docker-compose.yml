@@ -1,0 +1,16 @@
+services:
+  mongodb:
+    container_name: mongo_db_sic
+    image: mongo:latest
+    restart: always
+    command:
+      - --storageEngine
+      - wiredTiger
+      - --auth
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=S3cr3t0
+    ports:
+      - "27018:27017"
+    volumes:
+      - ./data/mongo:/data/db

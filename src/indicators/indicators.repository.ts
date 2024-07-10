@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Indicator } from './schemas/indicator.schema';
-import { IndicatorType } from './indicator-type.enum';
+import { Indicator } from './schema/indicator.schema';
 
 @Injectable()
 export class IndicatorsRepository {
@@ -12,11 +11,11 @@ export class IndicatorsRepository {
     return this.indicatorModel.find().exec();
   }
 
-  async findByType(type: IndicatorType): Promise<Indicator[]> {
-    return this.indicatorModel.find({ type }).exec();
-  }
-
-  async findOne(type: IndicatorType, date: string): Promise<Indicator> {
-    return this.indicatorModel.findOne({ type, date }).exec();
+  async findOne(type: string, date: string): Promise<Indicator> {
+    const formattedDate = new Date(date).toISOString().split('T')[0]; // Asegura formato YYYY-MM-DD
+    return this.indicatorModel.findOne({
+      indicator: type,
+      date: formattedDate
+    }).exec();
   }
 }

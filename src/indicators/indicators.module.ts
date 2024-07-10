@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { IndicatorsService } from './indicators.service';
 import { IndicatorsController } from './indicators.controller';
 import { IndicatorsRepository } from './indicators.repository';
-import { Indicator, IndicatorSchema } from './schemas/indicator.schema';
+import { Indicator, IndicatorSchema } from './schema/indicator.schema';
 
 @Module({
   imports: [

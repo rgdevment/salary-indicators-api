@@ -1,11 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { IndicatorsRepository } from './indicators.repository';
-import { IndicatorResponseDto } from './dto/indicator-response.dto';
+import { Injectable } from '@nestjs/common';
+import { IndicatorRepository } from './indicator.repository';
+import { IndicatorResponseDto } from './dtos/indicator-response.dto';
 import { IndicatorEnum } from './indicator.enum';
 
 @Injectable()
-export class IndicatorsService {
-  constructor(private readonly indicatorsRepository: IndicatorsRepository) {}
+export class IndicatorService {
+  constructor(private readonly indicatorsRepository: IndicatorRepository) {}
 
   async findCurrentIndicatorValue(
     indicator: IndicatorEnum,

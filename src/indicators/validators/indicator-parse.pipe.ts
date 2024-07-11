@@ -1,8 +1,8 @@
-import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { IndicatorEnum } from '../indicator.enum';
 
 @Injectable()
-export class ParseIndicatorPipe
+export class IndicatorParsePipe
   implements PipeTransform<string, IndicatorEnum>
 {
   transform(value: string): IndicatorEnum {

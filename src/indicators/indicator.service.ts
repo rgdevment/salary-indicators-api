@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { IndicatorRepository } from './indicator.repository';
 import { IndicatorResponseDto } from './dtos/indicator-response.dto';
 import { IndicatorEnum } from './indicator.enum';
@@ -7,13 +7,15 @@ import { IndicatorEnum } from './indicator.enum';
 export class IndicatorService {
   constructor(private readonly indicatorsRepository: IndicatorRepository) {}
 
-  async findCurrentIndicatorValue(
+  async findCurrentIndicator(
     indicator: IndicatorEnum,
-  ): Promise<IndicatorResponseDto | null> {
+  ): Promise<IndicatorResponseDto> {
     const result = await this.indicatorsRepository.findOne(indicator);
 
     if (!result) {
-      return null;
+      throw new NotFoundException(
+        `No se encontró información para el indicador ${indicator} en la fecha actual.`,
+      );
     }
 
     return new IndicatorResponseDto(

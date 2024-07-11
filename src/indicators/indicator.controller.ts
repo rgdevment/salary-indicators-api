@@ -1,19 +1,18 @@
-import { Controller, Get, Param } from "@nestjs/common";
-import { IndicatorService } from "./indicator.service";
+import { Controller, Get, Param, UseFilters } from '@nestjs/common';
+import { IndicatorService } from './indicator.service';
+import { IndicatorEnum } from './indicator.enum';
+import { IndicatorParsePipe } from './validators/indicator-parse.pipe';
+import { GlobalExceptionFilter } from '../common/filters/global-exception.filter';
 
+@UseFilters(GlobalExceptionFilter)
 @Controller('indicadores')
 export class IndicatorController {
   constructor(private readonly indicatorsService: IndicatorService) {}
 
-  @Get(':indicator')
+  @Get(':indicatorName')
   async getIndicator(
-    @Param('in"indicator"ndicatorParsePipe) indicator: IndicatorEnum,
- ) {
-    const indicatorDto =
-      await this.indicatorsService.findCurrentIndicatorValue(indicator);
-    if (!indicatorDto) {
-      throw new HttpException('No content', HttpStatus.NO_CONTENT);
-    }
-    return indicatorDto;
+    @Param('indicatorName', IndicatorParsePipe) indicatorName: IndicatorEnum,
+  ) {
+    return await this.indicatorsService.findCurrentIndicator(indicatorName);
   }
 }

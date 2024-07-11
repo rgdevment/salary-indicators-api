@@ -1,7 +1,7 @@
-export enum IndicatorType {
+export enum IndicatorEnum {
   UF = 'UF',
   UTM = 'UTM',
   EURO = 'EURO',
-  DOLLAR = 'DOLLAR',
+  DOLAR = 'DOLAR',
   IPC = 'IPC',
 }

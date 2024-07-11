@@ -2,20 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Indicator } from './schema/indicator.schema';
+import { IndicatorEnum } from './indicator.enum';
 
 @Injectable()
 export class IndicatorsRepository {
-  constructor(@InjectModel(Indicator.name) private readonly indicatorModel: Model<Indicator>) {}
+  constructor(
+    @InjectModel(Indicator.name)
+    private readonly indicatorModel: Model<Indicator>,
+  ) {}
 
-  async findAll(): Promise<Indicator[]> {
-    return this.indicatorModel.find().exec();
-  }
+  async findOne(type: IndicatorEnum): Promise<Indicator> {
+    const formattedDate = new Date().toISOString().split('T')[0];
 
-  async findOne(type: string, date: string): Promise<Indicator> {
-    const formattedDate = new Date(date).toISOString().split('T')[0]; // Asegura formato YYYY-MM-DD
-    return this.indicatorModel.findOne({
-      indicator: type,
-      date: formattedDate
-    }).exec();
+    return await this.indicatorModel
+      .findOne({
+        indicator: type,
+        date: { $lt: formattedDate },
+      })
+      .sort({ date: -1 })
+      .exec();
   }
 }

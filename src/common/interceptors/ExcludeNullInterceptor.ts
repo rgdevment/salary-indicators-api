@@ -6,9 +6,7 @@ import { instanceToPlain } from 'class-transformer';
 @Injectable()
 export class ExcludeNullInterceptor implements NestInterceptor {
   intercept(_: ExecutionContext, next: CallHandler): Observable<any> {
-    return next.handle().pipe(
-      map(data => this.transformResponse(data))
-    );
+    return next.handle().pipe(map(data => this.transformResponse(data)));
   }
 
   private transformResponse(data: any): any {

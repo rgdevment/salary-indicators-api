@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { IndicatorEnum } from '../indicator.enum';
-import { I18nService } from "nestjs-i18n";
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class IndicatorParsePipe implements PipeTransform<string, IndicatorEnum> {

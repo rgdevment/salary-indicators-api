@@ -1,7 +1,7 @@
 import { IndicatorValueDto } from './indicator-value.dto';
 import { IndicatorBaseResponseDto } from './indicator-base-response.dto';
-import { Expose } from "class-transformer";
-import { ApiProperty } from "@nestjs/swagger";
+import { Expose } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class IndicatorResponseDto extends IndicatorBaseResponseDto {
   data: IndicatorValueDto[];
@@ -14,12 +14,12 @@ export class IndicatorResponseDto extends IndicatorBaseResponseDto {
   accumulatedYearly?: number;
 
   constructor({
-                indicator,
-                data,
-                average,
-                accumulated,
-                accumulatedYearly,
-              }: {
+    indicator,
+    data,
+    average,
+    accumulated,
+    accumulatedYearly,
+  }: {
     indicator: string;
     data: IndicatorValueDto[];
     average?: number;

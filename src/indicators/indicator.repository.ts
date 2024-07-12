@@ -11,9 +11,7 @@ export class IndicatorRepository {
     private readonly indicatorModel: Model<Indicator>,
   ) {}
 
-  async findCurrentDayOrLastRecord(
-    indicator: IndicatorEnum,
-  ): Promise<Indicator> {
+  async findCurrentDayOrLastRecord(indicator: IndicatorEnum): Promise<Indicator> {
     const formattedDate = new Date().toISOString().split('T')[0];
 
     return await this.indicatorModel
@@ -25,7 +23,7 @@ export class IndicatorRepository {
       .exec();
   }
 
-  async findFirstIndicatorOfMonth(indicator: IndicatorEnum,): Promise<Indicator> {
+  async findFirstIndicatorOfMonth(indicator: IndicatorEnum): Promise<Indicator> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     return this.indicatorModel
@@ -38,12 +36,8 @@ export class IndicatorRepository {
 
   async findAverageIndicatorOfMonth(indicator: IndicatorEnum): Promise<number> {
     const now = new Date();
-    const startOfMonth = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0),
-    );
-    const endOfMonth = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999),
-    );
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
+    const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
     const results = await this.indicatorModel.aggregate([
       {
         $match: {
@@ -70,9 +64,7 @@ export class IndicatorRepository {
 
   async findLastIndicatorOfMonthOrLastRecord(indicator: IndicatorEnum): Promise<Indicator> {
     const now = new Date();
-    const endOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)
-      .toISOString()
-      .split('T')[0];
+    const endOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0).toISOString().split('T')[0];
 
     return this.indicatorModel
       .findOne({
@@ -84,17 +76,15 @@ export class IndicatorRepository {
   }
 
   async findAccumulatedOfIndicatorsLast12Months(indicator: IndicatorEnum): Promise<number> {
-    const lastRecord = await this.indicatorModel
-      .findOne({ indicator })
-      .sort({ date: -1 })
-      .exec();
+    const lr = await this.indicatorModel.findOne({ indicator }).sort({ date: -1 }).exec();
 
-    if (!lastRecord) {
+    if (!lr) {
       return null;
     }
-    const lastRecordDate = new Date(lastRecord.date);
-    const startOfLastRecordMonth = new Date(lastRecordDate.getUTCFullYear(), lastRecordDate.getUTCMonth(), 1, 0, 0, 0, 0);
-    const twelveMonthsAgo = new Date(startOfLastRecordMonth.getUTCFullYear() - 1, startOfLastRecordMonth.getUTCMonth(), 1, 0, 0, 0, 0);
+    const lrd = new Date(lr.date);
+    const startOfLastRecordMonth = new Date(lrd.getUTCFullYear(), lrd.getUTCMonth(), 1, 0, 0, 0, 0);
+    const lastYear = startOfLastRecordMonth.getUTCFullYear() - 1;
+    const twelveMonthsAgo = new Date(lastYear, startOfLastRecordMonth.getUTCMonth(), 1, 0, 0, 0, 0);
 
     const results = await this.indicatorModel.aggregate([
       {
@@ -110,7 +100,6 @@ export class IndicatorRepository {
         },
       },
     ]);
-
 
     if (results.length > 0) {
       const result = results[0].sum;

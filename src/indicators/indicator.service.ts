@@ -13,7 +13,13 @@ export class IndicatorService {
     const currentIndicator = await this.repository.findCurrentDayOrLastRecord(IndicatorEnum.UF);
     const firstIndicator = await this.repository.findFirstIndicatorOfMonth(IndicatorEnum.UF);
     const averageIndicatorValue = await this.repository.findAverageIndicatorOfMonth(IndicatorEnum.UF);
-    const lastIndicator = await this.repository.findLastIndicatorOfMonth(IndicatorEnum.UF);
+    const lastIndicator = await this.repository.findLastIndicatorOfMonthOrLastRecord(IndicatorEnum.UF);
+
+    if(!currentIndicator || !firstIndicator || !lastIndicator) {
+      throw new NotFoundException(
+        this.i18n.t('indicators.indicatorNotFound', { args: { indicator: IndicatorEnum.UF } }),
+      );
+    }
 
     const currentIndicatorDto = new IndicatorValueDto(
       currentIndicator.value,

@@ -25,19 +25,14 @@ export class IndicatorRepository {
       .exec();
   }
 
-  async findFirstIndicatorOfMonth(
-    indicator: IndicatorEnum,
-  ): Promise<Indicator> {
+  async findFirstIndicatorOfMonth(indicator: IndicatorEnum,): Promise<Indicator> {
     const now = new Date();
-    const startOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth(), 1)
-      .toISOString()
-      .split('T')[0];
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     return this.indicatorModel
       .findOne({
         indicator,
-        date: { $lte: startOfMonth },
+        date: startOfMonth,
       })
-      .sort({ date: -1 })
       .exec();
   }
 
@@ -73,7 +68,7 @@ export class IndicatorRepository {
     return null;
   }
 
-  async findLastIndicatorOfMonth(indicator: IndicatorEnum): Promise<Indicator> {
+  async findLastIndicatorOfMonthOrLastRecord(indicator: IndicatorEnum): Promise<Indicator> {
     const now = new Date();
     const endOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)
       .toISOString()

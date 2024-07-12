@@ -1,14 +1,12 @@
 export class IndicatorValueDto {
   value: number;
   date: string;
-  value_to_word: string;
-  description: string;
+  value_text: string;
 
-  constructor(value: number, date: Date, value_to_word: string, description: string) {
+  constructor(value: number, date: Date, value_to_word: string) {
     this.date = this.formatDate(date);
     this.value = value;
-    this.value_to_word = value_to_word;
-    this.description = description;
+    this.value_text = value_to_word;
   }
 
   private formatDate(date: Date): string {

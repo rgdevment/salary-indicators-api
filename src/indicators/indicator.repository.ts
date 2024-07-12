@@ -11,26 +11,31 @@ export class IndicatorRepository {
     private readonly indicatorModel: Model<Indicator>,
   ) {}
 
-  async testConnection(): Promise<boolean> {
-    try {
-      await this.indicatorModel.estimatedDocumentCount().exec();
-      return true;
-    } catch (error) {
-      console.error('Error al verificar la conexión a la base de datos:', error);
-      throw new Error('Fallo al verificar la conexión a la base de datos');
-    }
+  async findCurrentDayOrLastRecord(
+    indicator: IndicatorEnum,
+  ): Promise<Indicator> {
+    const formattedDate = new Date().toISOString().split('T')[0];
+
+    return await this.indicatorModel
+      .findOne({
+        indicator,
+        date: { $lte: formattedDate },
+      })
+      .sort({ date: -1 })
+      .exec();
   }
 
-  async findLastIndicatorOfMonth(indicator: IndicatorEnum): Promise<Indicator> {
+  async findFirstIndicatorOfMonth(
+    indicator: IndicatorEnum,
+  ): Promise<Indicator> {
     const now = new Date();
-    const endOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)
+    const startOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth(), 1)
       .toISOString()
       .split('T')[0];
-
     return this.indicatorModel
       .findOne({
         indicator,
-        date: { $lte: endOfMonth },
+        date: { $lte: startOfMonth },
       })
       .sort({ date: -1 })
       .exec();
@@ -68,31 +73,16 @@ export class IndicatorRepository {
     return null;
   }
 
-  async findFirstIndicatorOfMonth(
-    indicator: IndicatorEnum,
-  ): Promise<Indicator> {
+  async findLastIndicatorOfMonth(indicator: IndicatorEnum): Promise<Indicator> {
     const now = new Date();
-    const startOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth(), 1)
+    const endOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)
       .toISOString()
       .split('T')[0];
+
     return this.indicatorModel
       .findOne({
         indicator,
-        date: { $lte: startOfMonth },
-      })
-      .sort({ date: -1 })
-      .exec();
-  }
-
-  async findCurrentDayOrLastRecord(
-    indicator: IndicatorEnum,
-  ): Promise<Indicator> {
-    const formattedDate = new Date().toISOString().split('T')[0];
-
-    return await this.indicatorModel
-      .findOne({
-        indicator,
-        date: { $lt: formattedDate },
+        date: { $lte: endOfMonth },
       })
       .sort({ date: -1 })
       .exec();

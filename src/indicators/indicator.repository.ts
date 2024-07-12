@@ -82,4 +82,85 @@ export class IndicatorRepository {
       .sort({ date: -1 })
       .exec();
   }
+
+  async findAccumulatedOfIndicatorsLast12Months(indicator: IndicatorEnum): Promise<number> {
+    const lastRecord = await this.indicatorModel
+      .findOne({ indicator })
+      .sort({ date: -1 })
+      .exec();
+
+    if (!lastRecord) {
+      return null;
+    }
+    const lastRecordDate = new Date(lastRecord.date);
+    const startOfLastRecordMonth = new Date(lastRecordDate.getUTCFullYear(), lastRecordDate.getUTCMonth(), 1, 0, 0, 0, 0);
+    const twelveMonthsAgo = new Date(startOfLastRecordMonth.getUTCFullYear() - 1, startOfLastRecordMonth.getUTCMonth(), 1, 0, 0, 0, 0);
+
+    const results = await this.indicatorModel.aggregate([
+      {
+        $match: {
+          indicator,
+          date: { $gte: twelveMonthsAgo, $lt: startOfLastRecordMonth },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          sum: { $sum: '$value' },
+        },
+      },
+    ]);
+
+
+    if (results.length > 0) {
+      const result = results[0].sum;
+      const decimalString = result.toString();
+      return parseFloat(parseFloat(decimalString).toFixed(2));
+    }
+
+    return null;
+  }
+
+  async findYearlyAccumulatedRecord(indicator: IndicatorEnum): Promise<number> {
+    const currentYear = new Date().getFullYear();
+    const startOfYear = new Date(Date.UTC(currentYear, 0, 1, 0, 0, 0, 0));
+
+    const lastRecordOfYear = await this.indicatorModel
+      .findOne({
+        indicator,
+        date: { $gte: startOfYear.toISOString() },
+      })
+      .sort({ date: -1 })
+      .exec();
+
+    if (!lastRecordOfYear) {
+      return null;
+    }
+
+    const results = await this.indicatorModel.aggregate([
+      {
+        $match: {
+          indicator,
+          date: {
+            $gte: startOfYear,
+            $lte: new Date(lastRecordOfYear.date),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          sum: { $sum: '$value' },
+        },
+      },
+    ]);
+
+    if (results.length > 0) {
+      const result = results[0].sum;
+      const decimalString = result.toString();
+      return parseFloat(parseFloat(decimalString).toFixed(2));
+    }
+
+    return null;
+  }
 }

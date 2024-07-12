@@ -20,7 +20,7 @@ export class IndicatorController {
     ) {
       return await this.indicatorsService.findIndicatorDetails(indicatorName);
     } else if (indicatorName === IndicatorEnum.IPC) {
-      return await this.indicatorsService.retrieveDetailsIPCIndicators();
+      return await this.indicatorsService.findCurrentIndicator(indicatorName);
     }
 
     return await this.indicatorsService.findCurrentIndicator(indicatorName);

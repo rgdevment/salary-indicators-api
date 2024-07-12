@@ -1,12 +1,17 @@
+import { Transform } from "class-transformer";
+
 export class IndicatorValueDto {
   value: number;
   date: string;
-  value_text: string;
+  details: string;
+  @Transform(({ value }) => value ?? null, { toClassOnly: true })
+  _note?: string;
 
-  constructor(value: number, date: Date, value_to_word: string) {
+  constructor(value: number, date: Date, value_to_word: string, _note?: string) {
     this.date = this.formatDate(date);
     this.value = value;
-    this.value_text = value_to_word;
+    this.details = value_to_word;
+    this._note = _note;
   }
 
   private formatDate(date: Date): string {

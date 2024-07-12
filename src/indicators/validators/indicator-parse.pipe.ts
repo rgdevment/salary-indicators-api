@@ -10,7 +10,7 @@ export class IndicatorParsePipe implements PipeTransform<string, IndicatorEnum> 
     const enumValue = value.toUpperCase() as unknown as IndicatorEnum;
 
     if (!Object.values(IndicatorEnum).includes(enumValue)) {
-      const message = this.i18n.t('globals.invalidIndicatorValue', { args: { value } });
+      const message = this.i18n.t('indicators.invalidIndicatorValue', { args: { value } });
       throw new BadRequestException(message);
     }
 

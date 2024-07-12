@@ -13,5 +13,6 @@ import { Indicator, IndicatorSchema } from './schemas/indicator.schema';
   ],
   controllers: [IndicatorController],
   providers: [IndicatorService, IndicatorRepository],
+  exports: [IndicatorRepository],
 })
 export class IndicatorModule {}

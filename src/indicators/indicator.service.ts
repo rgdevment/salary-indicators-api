@@ -4,6 +4,7 @@ import { IndicatorEnum } from './indicator.enum';
 import { IndicatorValueDto } from './dtos/indicator-value.dto';
 import { IndicatorResponseDto } from './dtos/indicator-response.dto';
 import { I18nService } from 'nestjs-i18n';
+import { IndicatorRecord } from './interfaces/indicator-record.interface';
 
 @Injectable()
 export class IndicatorService {
@@ -12,109 +13,103 @@ export class IndicatorService {
     private readonly i18n: I18nService,
   ) {}
 
-  async retrieveDetailsIPCIndicator(): Promise<IndicatorResponseDto> {
-    const indicator = IndicatorEnum.IPC;
-    const currentIndicator = await this.repository.findCurrentDayOrLastRecord(indicator);
-    const accumulatedYearly = await this.repository.findAccumulatedOfIndicatorsLast12Months(indicator);
-    const accumulated = await this.repository.findYearlyAccumulatedRecord(indicator);
-
-    if (!currentIndicator) {
+  private async getIndicatorValueDto(
+    indicatorRecord: IndicatorRecord | null,
+    noteKey: string,
+  ): Promise<IndicatorValueDto> {
+    if (!indicatorRecord) {
       throw new NotFoundException(
         this.i18n.t('indicators.indicatorNotFound', {
-          args: { indicator },
+          args: { indicator: indicatorRecord },
         }),
       );
     }
-
-    const currentIndicatorDto = new IndicatorValueDto(
-      currentIndicator.value,
-      new Date(currentIndicator.date),
-      currentIndicator.value_to_word,
-      this.i18n.t('indicators.currentValueNote'),
+    return new IndicatorValueDto(
+      indicatorRecord.value,
+      new Date(indicatorRecord.date),
+      indicatorRecord.value_to_word,
+      this.i18n.t(noteKey),
     );
+  }
+
+  private async getIndicatorDetails(indicator: IndicatorEnum): Promise<{
+    current: IndicatorValueDto;
+    first?: IndicatorValueDto;
+    last?: IndicatorValueDto;
+    average?: number;
+    accumulated?: number;
+    accumulatedYearly?: number;
+  }> {
+    const currentIndicator = await this.repository.findCurrentOrLastDayRecord(indicator);
+    const firstIndicator = await this.repository.findFirstRecordOfMonth(indicator);
+    const average = await this.repository.calculateAverageValueOfMonth(indicator);
+    const lastIndicator = await this.repository.findLastRecordOfMonth(indicator);
+    const accumulatedYearly = await this.repository.calculateAccumulatedValueLast12Months(indicator);
+    const accumulated = await this.repository.calculateYearlyAccumulatedValue(indicator);
+
+    return {
+      current: await this.getIndicatorValueDto(currentIndicator, 'indicators.currentValueNote'),
+      first: firstIndicator
+        ? await this.getIndicatorValueDto(firstIndicator, 'indicators.firstDayOfMonthNote')
+        : undefined,
+      last: lastIndicator
+        ? await this.getIndicatorValueDto(lastIndicator, 'indicators.lastRecordedValueNote')
+        : undefined,
+      average,
+      accumulated,
+      accumulatedYearly,
+    };
+  }
+
+  async retrieveDetailsIPCIndicator(indicator: IndicatorEnum): Promise<IndicatorResponseDto> {
+    const details = await this.getIndicatorDetails(indicator);
+    if (!details.current) {
+      throw new NotFoundException(this.i18n.t('indicators.indicatorNotFound', { args: { indicator } }));
+    }
 
     return new IndicatorResponseDto({
       indicator,
-      data: [currentIndicatorDto],
-      accumulated,
-      accumulatedYearly,
+      data: [details.current],
+      accumulated: details.accumulated,
+      accumulatedYearly: details.accumulatedYearly,
     });
   }
 
-  async retrieveDetailsUFIndicator(): Promise<IndicatorResponseDto> {
-    const indicator = IndicatorEnum.UF;
-    const currentIndicator = await this.repository.findCurrentDayOrLastRecord(indicator);
-    const firstIndicator = await this.repository.findFirstIndicatorOfMonth(indicator);
-    const average = await this.repository.findAverageIndicatorOfMonth(indicator);
-    const lastIndicator = await this.repository.findLastIndicatorOfMonthOrLastRecord(indicator);
-
-    if (!currentIndicator || !firstIndicator || !lastIndicator) {
-      throw new NotFoundException(
-        this.i18n.t('indicators.indicatorNotFound', {
-          args: { indicator },
-        }),
-      );
+  async retrieveDetailsUFIndicator(indicator: IndicatorEnum): Promise<IndicatorResponseDto> {
+    const details = await this.getIndicatorDetails(indicator);
+    if (!details.current || !details.first || !details.last) {
+      throw new NotFoundException(this.i18n.t('indicators.indicatorNotFound', { args: { indicator } }));
     }
-
-    const currentIndicatorDto = new IndicatorValueDto(
-      currentIndicator.value,
-      new Date(currentIndicator.date),
-      currentIndicator.value_to_word,
-      this.i18n.t('indicators.currentValueNote'),
-    );
-    const firstIndicatorDto = new IndicatorValueDto(
-      firstIndicator.value,
-      new Date(firstIndicator.date),
-      firstIndicator.value_to_word,
-      this.i18n.t('indicators.firstDayOfMonthNote'),
-    );
-    const lastIndicatorDto = new IndicatorValueDto(
-      lastIndicator.value,
-      new Date(lastIndicator.date),
-      lastIndicator.value_to_word,
-      this.i18n.t('indicators.lastRecordedValueNote'),
-    );
 
     return new IndicatorResponseDto({
       indicator,
-      data: [currentIndicatorDto, firstIndicatorDto, lastIndicatorDto],
-      average,
+      data: [details.current, details.first, details.last],
+      average: details.average,
     });
   }
 
   async findIndicatorDetails(indicator: IndicatorEnum): Promise<IndicatorResponseDto> {
-    const currentIndicator = await this.repository.findCurrentDayOrLastRecord(indicator);
-    const firstIndicator = await this.repository.findFirstIndicatorOfMonth(indicator);
-    const average = await this.repository.findAverageIndicatorOfMonth(indicator);
-
-    const currentIndicatorDto = new IndicatorValueDto(
-      currentIndicator.value,
-      new Date(currentIndicator.date),
-      currentIndicator.value_to_word,
-      this.i18n.t('indicators.currentValueNote'),
-    );
-    const firstIndicatorDto = new IndicatorValueDto(
-      firstIndicator.value,
-      new Date(firstIndicator.date),
-      firstIndicator.value_to_word,
-      this.i18n.t('indicators.firstDayOfMonthNote'),
-    );
+    const details = await this.getIndicatorDetails(indicator);
+    if (!details.current || !details.first) {
+      throw new NotFoundException(this.i18n.t('indicators.indicatorNotFound', { args: { indicator } }));
+    }
 
     return new IndicatorResponseDto({
       indicator,
-      data: [currentIndicatorDto, firstIndicatorDto],
-      average,
+      data: [details.current, details.first],
+      average: details.average,
     });
   }
 
   async findCurrentIndicator(indicator: IndicatorEnum): Promise<IndicatorResponseDto> {
-    const result = await this.repository.findCurrentDayOrLastRecord(indicator);
-
-    if (!result) {
+    const details = await this.getIndicatorDetails(indicator);
+    if (!details.current) {
       throw new NotFoundException(this.i18n.t('indicators.indicatorNotFound', { args: { indicator } }));
     }
 
-    const currentIndicatorDto = new IndicatorValueDto(result.value, new Date(result.date), result.value_to_word);
-    return new IndicatorResponseDto({ indicator, data: [currentIndicatorDto] });
+    return new IndicatorResponseDto({
+      indicator,
+      data: [details.current],
+    });
   }
 }

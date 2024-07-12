@@ -3,18 +3,19 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Indicator } from './schemas/indicator.schema';
 import { IndicatorEnum } from './indicator.enum';
+import { IndicatorRepositoryInterface } from './interfaces/indicator-repository.interface';
+import { AggregationResult } from './interfaces/aggregation-result.interface';
 
 @Injectable()
-export class IndicatorRepository {
+export class IndicatorRepository implements IndicatorRepositoryInterface {
   constructor(
     @InjectModel(Indicator.name)
     private readonly indicatorModel: Model<Indicator>,
   ) {}
 
-  async findCurrentDayOrLastRecord(indicator: IndicatorEnum): Promise<Indicator> {
+  async findCurrentOrLastDayRecord(indicator: IndicatorEnum): Promise<Indicator> {
     const formattedDate = new Date().toISOString().split('T')[0];
-
-    return await this.indicatorModel
+    return this.indicatorModel
       .findOne({
         indicator,
         date: { $lte: formattedDate },
@@ -23,9 +24,10 @@ export class IndicatorRepository {
       .exec();
   }
 
-  async findFirstIndicatorOfMonth(indicator: IndicatorEnum): Promise<Indicator> {
+  async findFirstRecordOfMonth(indicator: IndicatorEnum): Promise<Indicator> {
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const startOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth(), 1).toISOString().split('T')[0];
+
     return this.indicatorModel
       .findOne({
         indicator,
@@ -34,11 +36,10 @@ export class IndicatorRepository {
       .exec();
   }
 
-  async findAverageIndicatorOfMonth(indicator: IndicatorEnum): Promise<number> {
-    const now = new Date();
-    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
-    const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
-    const results = await this.indicatorModel.aggregate([
+  async calculateAverageValueOfMonth(indicator: IndicatorEnum): Promise<number> {
+    const { startOfMonth, endOfMonth } = this.getMonthBounds();
+
+    const results = await this.indicatorModel.aggregate<AggregationResult>([
       {
         $match: {
           indicator,
@@ -53,19 +54,12 @@ export class IndicatorRepository {
       },
     ]);
 
-    if (results.length > 0) {
-      const result = results[0].average;
-      const decimalString = result.toString();
-      return parseFloat(parseFloat(decimalString).toFixed(2));
-    }
-
-    return null;
+    return this.parseAggregateResult(results);
   }
 
-  async findLastIndicatorOfMonthOrLastRecord(indicator: IndicatorEnum): Promise<Indicator> {
+  async findLastRecordOfMonth(indicator: IndicatorEnum): Promise<Indicator> {
     const now = new Date();
     const endOfMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0).toISOString().split('T')[0];
-
     return this.indicatorModel
       .findOne({
         indicator,
@@ -75,18 +69,20 @@ export class IndicatorRepository {
       .exec();
   }
 
-  async findAccumulatedOfIndicatorsLast12Months(indicator: IndicatorEnum): Promise<number> {
-    const lr = await this.indicatorModel.findOne({ indicator }).sort({ date: -1 }).exec();
+  async calculateAccumulatedValueLast12Months(indicator: IndicatorEnum): Promise<number> {
+    const lastRecord = await this.indicatorModel.findOne({ indicator }).sort({ date: -1 }).exec();
 
-    if (!lr) {
+    if (!lastRecord) {
       return null;
     }
-    const lrd = new Date(lr.date);
-    const startOfLastRecordMonth = new Date(lrd.getUTCFullYear(), lrd.getUTCMonth(), 1, 0, 0, 0, 0);
-    const lastYear = startOfLastRecordMonth.getUTCFullYear() - 1;
-    const twelveMonthsAgo = new Date(lastYear, startOfLastRecordMonth.getUTCMonth(), 1, 0, 0, 0, 0);
 
-    const results = await this.indicatorModel.aggregate([
+    const lastRecordDate = new Date(lastRecord.date);
+    const utcFullYear = lastRecordDate.getUTCFullYear();
+    const startOfLastRecordMonth = new Date(utcFullYear, lastRecordDate.getUTCMonth(), 1, 0, 0, 0, 0);
+    const lastMonthYear = startOfLastRecordMonth.getUTCFullYear() - 1;
+    const twelveMonthsAgo = new Date(lastMonthYear, startOfLastRecordMonth.getUTCMonth(), 1, 0, 0, 0, 0);
+
+    const results = await this.indicatorModel.aggregate<AggregationResult>([
       {
         $match: {
           indicator,
@@ -101,39 +97,17 @@ export class IndicatorRepository {
       },
     ]);
 
-    if (results.length > 0) {
-      const result = results[0].sum;
-      const decimalString = result.toString();
-      return parseFloat(parseFloat(decimalString).toFixed(2));
-    }
-
-    return null;
+    return this.parseAggregateResult(results);
   }
 
-  async findYearlyAccumulatedRecord(indicator: IndicatorEnum): Promise<number> {
-    const currentYear = new Date().getFullYear();
-    const startOfYear = new Date(Date.UTC(currentYear, 0, 1, 0, 0, 0, 0));
+  async calculateYearlyAccumulatedValue(indicator: IndicatorEnum): Promise<number> {
+    const { startOfYear, endOfYear } = this.getYearBounds();
 
-    const lastRecordOfYear = await this.indicatorModel
-      .findOne({
-        indicator,
-        date: { $gte: startOfYear.toISOString() },
-      })
-      .sort({ date: -1 })
-      .exec();
-
-    if (!lastRecordOfYear) {
-      return null;
-    }
-
-    const results = await this.indicatorModel.aggregate([
+    const results = await this.indicatorModel.aggregate<AggregationResult>([
       {
         $match: {
           indicator,
-          date: {
-            $gte: startOfYear,
-            $lte: new Date(lastRecordOfYear.date),
-          },
+          date: { $gte: new Date(startOfYear), $lte: new Date(endOfYear) },
         },
       },
       {
@@ -144,12 +118,38 @@ export class IndicatorRepository {
       },
     ]);
 
-    if (results.length > 0) {
-      const result = results[0].sum;
-      const decimalString = result.toString();
-      return parseFloat(parseFloat(decimalString).toFixed(2));
-    }
+    return this.parseAggregateResult(results);
+  }
 
+  private getMonthBounds(): { startOfMonth: Date; endOfMonth: Date } {
+    const now = new Date();
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
+    const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+
+    return {
+      startOfMonth: startOfMonth,
+      endOfMonth: endOfMonth,
+    };
+  }
+
+  private getYearBounds(): { startOfYear: string; endOfYear: string } {
+    const currentYear = new Date().getUTCFullYear();
+    const startOfYear = new Date(Date.UTC(currentYear, 0, 1, 0, 0, 0, 0));
+    const endOfYear = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59, 999));
+    return {
+      startOfYear: startOfYear.toISOString(),
+      endOfYear: endOfYear.toISOString(),
+    };
+  }
+
+  private parseAggregateResult(results: AggregationResult[]): number {
+    if (results.length > 0) {
+      const result = results[0].average ?? results[0].sum;
+      if (result !== undefined) {
+        const decimalString = result.toString();
+        return parseFloat(parseFloat(decimalString).toFixed(2));
+      }
+    }
     return null;
   }
 }

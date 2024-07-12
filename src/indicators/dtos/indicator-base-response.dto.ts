@@ -1,12 +1,10 @@
-import { Transform } from 'class-transformer';
+import { ApiProperty } from "@nestjs/swagger";
 
 export class IndicatorBaseResponseDto {
+  @ApiProperty({ example: 'UF', description: 'El nombre o tipo de indicador.' })
   indicator: string;
-  @Transform(({ value }) => value ?? null, { toClassOnly: true })
-  average?: number;
 
-  constructor(indicator: string, average?: number) {
+  constructor(indicator: string) {
     this.indicator = indicator;
-    this.average = average;
   }
 }

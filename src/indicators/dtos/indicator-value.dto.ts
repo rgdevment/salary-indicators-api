@@ -1,10 +1,12 @@
-import { Transform } from "class-transformer";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class IndicatorValueDto {
+  @ApiProperty({ example: 37591.00, description: 'El valor en decimal del indicador.' })
   value: number;
+  @ApiProperty({ example: '2024-06-29', description: 'Fecha a la que corresponde el valor del indicador.' })
   date: string;
+  @ApiProperty({ example: 'treinta y siete mil seiscientos dos pesos', description: 'El valor del indicador en texto.' })
   details: string;
-  @Transform(({ value }) => value ?? null, { toClassOnly: true })
   _note?: string;
 
   constructor(value: number, date: Date, value_to_word: string, _note?: string) {

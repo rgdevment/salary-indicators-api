@@ -1,9 +1,10 @@
-import { Controller, Get, NotFoundException, Param } from "@nestjs/common";
+import { Controller, Get, NotFoundException, Param, UseFilters } from "@nestjs/common";
 import { IndicatorService } from './indicator.service';
 import { IndicatorEnum } from './indicator.enum';
 import { IndicatorParsePipe } from './validators/indicator-parse.pipe';
+import { GlobalExceptionFilter } from "../common/filters/global-exception.filter";
 
-//@UseFilters(GlobalExceptionFilter)
+@UseFilters(GlobalExceptionFilter)
 @Controller('indicadores')
 export class IndicatorController {
   constructor(private readonly indicatorsService: IndicatorService) {}

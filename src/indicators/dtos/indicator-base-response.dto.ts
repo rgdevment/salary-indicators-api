@@ -1,17 +1,12 @@
-import { IndicatorValueDto } from "./indicator-value.dto";
+import { Transform } from 'class-transformer';
 
-export class IndicatorResponseDto {
+export class IndicatorBaseResponseDto {
   indicator: string;
-  current_value: IndicatorValueDto;
-  first_record_month: IndicatorValueDto;
-  average_month: IndicatorValueDto;
-  last_record_month: IndicatorValueDto;
+  @Transform(({ value }) => value ?? null, { toClassOnly: true })
+  average?: number;
 
-  constructor(indicator: string, current_value: IndicatorValueDto, first_record_month: IndicatorValueDto, average_month: IndicatorValueDto, last_record_month: IndicatorValueDto) {
+  constructor(indicator: string, average?: number) {
     this.indicator = indicator;
-    this.current_value = current_value;
-    this.first_record_month = first_record_month;
-    this.average_month = average_month;
-    this.last_record_month = last_record_month;
+    this.average = average;
   }
 }

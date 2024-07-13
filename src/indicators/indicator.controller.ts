@@ -1,12 +1,13 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseFilters } from '@nestjs/common';
 import { IndicatorService } from './indicator.service';
 import { IndicatorEnum } from './indicator.enum';
 import { IndicatorParsePipe } from './validators/indicator-parse.pipe';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IndicatorResponseDto } from './dtos/indicator-response.dto';
+import { GlobalExceptionFilter } from '../common/filters/global-exception.filter';
 
 @ApiTags('Indicadores')
-//@UseFilters(GlobalExceptionFilter)
+@UseFilters(GlobalExceptionFilter)
 @Controller('indicadores')
 export class IndicatorController {
   constructor(private readonly indicatorsService: IndicatorService) {}
